@@ -1,12 +1,13 @@
 import type React from "react"
 import "./globals.css"
+import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 
 const inter = Inter({ subsets: ["latin"] })
 
-export const metadata = {
-  title: "SchoolSync",
-  description: "Learning Management System",
+export const metadata: Metadata = {
+  title: "School Management System",
+  description: "A comprehensive school management system",
     generator: 'v0.dev'
 }
 
