@@ -1,6 +1,6 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
-export type Database = {
+export interface Database {
   public: {
     Tables: {
       announcements: {
@@ -414,6 +414,119 @@ export type Database = {
           event_type?: string
           course_id?: string | null
           created_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      attendance: {
+        Row: {
+          id: string
+          student_id: string
+          course_id: string
+          date: string
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          course_id: string
+          date: string
+          status: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          course_id?: string
+          date?: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      course_modules: {
+        Row: {
+          id: string
+          course_id: string
+          title: string
+          description: string | null
+          order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          course_id: string
+          title: string
+          description?: string | null
+          order: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          course_id?: string
+          title?: string
+          description?: string | null
+          order?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      course_content: {
+        Row: {
+          id: string
+          module_id: string
+          title: string
+          content_type: string
+          content: string
+          order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          module_id: string
+          title: string
+          content_type: string
+          content: string
+          order: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          module_id?: string
+          title?: string
+          content_type?: string
+          content?: string
+          order?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      departments: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
           created_at?: string
           updated_at?: string
         }
