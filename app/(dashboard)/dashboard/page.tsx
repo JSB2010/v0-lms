@@ -59,16 +59,12 @@ export default function DashboardPage() {
           .select("*", { count: "exact", head: true })
           .eq("author_id", profile.id)
 
+        // Simplified query to avoid complex syntax
         const { count: eventsCount } = await supabase
           .from("calendar_events")
           .select("*", { count: "exact", head: true })
           .gte("start_date", new Date().toISOString())
-          .or(
-            `course_id.in.(${supabase
-              .from("courses")
-              .select("id")
-              .eq("teacher_id", profile.id)}),created_by.eq.${profile.id}`,
-          )
+          .eq("created_by", profile.id)
 
         setStats({
           courses: coursesCount || 0,
@@ -85,27 +81,36 @@ export default function DashboardPage() {
 
         const courseIds = enrollments?.map((e) => e.course_id) || []
 
-        const { count: assignmentsCount } = await supabase
-          .from("assignments")
-          .select("id", { count: "exact", head: true })
-          .in("course_id", courseIds)
+        let assignmentsCount = 0
+        let eventsCount = 0
+
+        if (courseIds.length > 0) {
+          const { count: aCount } = await supabase
+            .from("assignments")
+            .select("id", { count: "exact", head: true })
+            .in("course_id", courseIds)
+
+          assignmentsCount = aCount || 0
+
+          const { count: eCount } = await supabase
+            .from("calendar_events")
+            .select("*", { count: "exact", head: true })
+            .gte("start_date", new Date().toISOString())
+            .in("course_id", courseIds)
+
+          eventsCount = eCount || 0
+        }
 
         const { count: submissionsCount } = await supabase
           .from("submissions")
           .select("*", { count: "exact", head: true })
           .eq("student_id", profile.id)
 
-        const { count: eventsCount } = await supabase
-          .from("calendar_events")
-          .select("*", { count: "exact", head: true })
-          .gte("start_date", new Date().toISOString())
-          .or(`course_id.in.(${courseIds.map((id) => `'${id}'`).join(",")}),course_id.is.null`)
-
         setStats({
           courses: coursesCount || 0,
-          assignments: assignmentsCount || 0,
+          assignments: assignmentsCount,
           announcements: submissionsCount || 0, // For students, show submissions instead
-          upcomingEvents: eventsCount || 0,
+          upcomingEvents: eventsCount,
         })
       } else if (profile.role === "parent") {
         // Parent dashboard data
@@ -124,27 +129,36 @@ export default function DashboardPage() {
 
           const courseIds = enrollments?.map((e) => e.course_id) || []
 
-          const { count: assignmentsCount } = await supabase
-            .from("assignments")
-            .select("id", { count: "exact", head: true })
-            .in("course_id", courseIds)
+          let assignmentsCount = 0
+          let eventsCount = 0
+
+          if (courseIds.length > 0) {
+            const { count: aCount } = await supabase
+              .from("assignments")
+              .select("id", { count: "exact", head: true })
+              .in("course_id", courseIds)
+
+            assignmentsCount = aCount || 0
+
+            const { count: eCount } = await supabase
+              .from("calendar_events")
+              .select("*", { count: "exact", head: true })
+              .gte("start_date", new Date().toISOString())
+              .in("course_id", courseIds)
+
+            eventsCount = eCount || 0
+          }
 
           const { count: gradesCount } = await supabase
             .from("grades")
             .select("*", { count: "exact", head: true })
             .in("student_id", childrenIds)
 
-          const { count: eventsCount } = await supabase
-            .from("calendar_events")
-            .select("*", { count: "exact", head: true })
-            .gte("start_date", new Date().toISOString())
-            .or(`course_id.in.(${courseIds.map((id) => `'${id}'`).join(",")}),course_id.is.null`)
-
           setStats({
             courses: coursesCount || 0,
-            assignments: assignmentsCount || 0,
+            assignments: assignmentsCount,
             announcements: gradesCount || 0, // For parents, show grades instead
-            upcomingEvents: eventsCount || 0,
+            upcomingEvents: eventsCount,
           })
         }
       }
@@ -334,23 +348,25 @@ function RecentActivity({ profile }: { profile: any }) {
           .eq("parent_id", profile.id)
           .then(({ data }) => data?.map((row) => row.student_id) || [])
 
-        query = supabase
-          .from("grades")
-          .select(`
-            id,
-            grade_type,
-            points_earned,
-            points_possible,
-            created_at,
-            student_id,
-            course_id,
-            students:student_id (profile_id),
-            profiles:students (first_name, last_name),
-            courses:course_id (name)
-          `)
-          .in("student_id", childrenIds)
-          .order("created_at", { ascending: false })
-          .limit(5)
+        if (childrenIds.length > 0) {
+          query = supabase
+            .from("grades")
+            .select(`
+              id,
+              grade_type,
+              points_earned,
+              points_possible,
+              created_at,
+              student_id,
+              course_id,
+              students:student_id (profile_id),
+              profiles:students (first_name, last_name),
+              courses:course_id (name)
+            `)
+            .in("student_id", childrenIds)
+            .order("created_at", { ascending: false })
+            .limit(5)
+        }
       }
 
       if (query) {
@@ -394,7 +410,7 @@ function RecentActivity({ profile }: { profile: any }) {
                     <div className="flex-1 space-y-1">
                       <p className="text-sm font-medium">{activity.title}</p>
                       <p className="text-xs text-muted-foreground">
-                        Posted by {activity.profiles.first_name} {activity.profiles.last_name} on{" "}
+                        Posted by {activity.profiles?.first_name || "Unknown"} {activity.profiles?.last_name || ""} on{" "}
                         {new Date(activity.created_at).toLocaleDateString()}
                       </p>
                     </div>
@@ -409,11 +425,12 @@ function RecentActivity({ profile }: { profile: any }) {
                     </div>
                     <div className="flex-1 space-y-1">
                       <p className="text-sm font-medium">
-                        {activity.profiles.first_name} {activity.profiles.last_name} submitted{" "}
-                        {activity.assignments.title}
+                        {activity.profiles?.first_name || "Unknown"} {activity.profiles?.last_name || ""} submitted{" "}
+                        {activity.assignments?.title || "an assignment"}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        For {activity.courses.name} on {new Date(activity.created_at).toLocaleDateString()}
+                        For {activity.courses?.name || "a course"} on{" "}
+                        {new Date(activity.created_at).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
@@ -427,7 +444,7 @@ function RecentActivity({ profile }: { profile: any }) {
                     </div>
                     <div className="flex-1 space-y-1">
                       <p className="text-sm font-medium">
-                        {activity.courses.name} - {activity.grade_type}
+                        {activity.courses?.name || "Course"} - {activity.grade_type}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         Score: {activity.points_earned}/{activity.points_possible} on{" "}
@@ -445,7 +462,8 @@ function RecentActivity({ profile }: { profile: any }) {
                     </div>
                     <div className="flex-1 space-y-1">
                       <p className="text-sm font-medium">
-                        {activity.profiles.first_name} {activity.profiles.last_name} - {activity.courses.name}
+                        {activity.profiles?.first_name || "Student"} {activity.profiles?.last_name || ""} -{" "}
+                        {activity.courses?.name || "Course"}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {activity.grade_type}: {activity.points_earned}/{activity.points_possible} on{" "}
@@ -455,6 +473,7 @@ function RecentActivity({ profile }: { profile: any }) {
                   </div>
                 )
               }
+              return null
             })
           )}
         </div>
@@ -511,19 +530,21 @@ function UpcomingDeadlines({ profile }: { profile: any }) {
 
         const courseIds = enrollments?.map((e) => e.course_id) || []
 
-        query = supabase
-          .from("assignments")
-          .select(`
-            id,
-            title,
-            due_date,
-            course_id,
-            courses:course_id (name)
-          `)
-          .in("course_id", courseIds)
-          .gte("due_date", new Date().toISOString())
-          .order("due_date", { ascending: true })
-          .limit(5)
+        if (courseIds.length > 0) {
+          query = supabase
+            .from("assignments")
+            .select(`
+              id,
+              title,
+              due_date,
+              course_id,
+              courses:course_id (name)
+            `)
+            .in("course_id", courseIds)
+            .gte("due_date", new Date().toISOString())
+            .order("due_date", { ascending: true })
+            .limit(5)
+        }
       } else if (profile.role === "parent") {
         // Parent sees children's upcoming assignment deadlines
         const { data: parentStudentRelations } = await supabase
@@ -541,19 +562,21 @@ function UpcomingDeadlines({ profile }: { profile: any }) {
 
           const courseIds = enrollments?.map((e) => e.course_id) || []
 
-          query = supabase
-            .from("assignments")
-            .select(`
-              id,
-              title,
-              due_date,
-              course_id,
-              courses:course_id (name)
-            `)
-            .in("course_id", courseIds)
-            .gte("due_date", new Date().toISOString())
-            .order("due_date", { ascending: true })
-            .limit(5)
+          if (courseIds.length > 0) {
+            query = supabase
+              .from("assignments")
+              .select(`
+                id,
+                title,
+                due_date,
+                course_id,
+                courses:course_id (name)
+              `)
+              .in("course_id", courseIds)
+              .gte("due_date", new Date().toISOString())
+              .order("due_date", { ascending: true })
+              .limit(5)
+          }
         }
       }
 

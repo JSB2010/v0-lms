@@ -264,7 +264,7 @@ export type Database = {
           first_name: string
           last_name: string
           email: string
-          role: Database["public"]["Enums"]["user_role"]
+          role: string
           created_at: string
           updated_at: string
         }
@@ -273,7 +273,7 @@ export type Database = {
           first_name: string
           last_name: string
           email: string
-          role: Database["public"]["Enums"]["user_role"]
+          role: string
           created_at?: string
           updated_at?: string
         }
@@ -282,7 +282,7 @@ export type Database = {
           first_name?: string
           last_name?: string
           email?: string
-          role?: Database["public"]["Enums"]["user_role"]
+          role?: string
           created_at?: string
           updated_at?: string
         }
@@ -376,6 +376,44 @@ export type Database = {
           id?: string
           profile_id?: string
           department?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      calendar_events: {
+        Row: {
+          id: string
+          title: string
+          description: string | null
+          start_date: string
+          end_date: string | null
+          event_type: string
+          course_id: string | null
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          description?: string | null
+          start_date: string
+          end_date?: string | null
+          event_type: string
+          course_id?: string | null
+          created_by: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string | null
+          start_date?: string
+          end_date?: string | null
+          event_type?: string
+          course_id?: string | null
+          created_by?: string
           created_at?: string
           updated_at?: string
         }
