@@ -83,9 +83,9 @@ const parentData = {
 
 // Calculate GPA based on course grades\
 const calculateGPA = (courses: typeof parentData.children[0].courses) => {
-  const totalPoints = courses.reduce((sum, course) => sum + course.grade, 0)
-  const gpa = (totalPoints / courses.length) / 20 // Convert to 4.0 scale
-  return gpa.toFixed(2)
+  const totalPoints = courses.reduce((sum, course) => sum + course.grade, 0);
+  const gpa = (totalPoints / courses.length) / 20; // Convert to 4.0 scale
+  return gpa.toFixed(2);
 }
 
 export default function ParentDashboard() {
